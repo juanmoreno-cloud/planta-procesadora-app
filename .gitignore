@@ -1,0 +1,37 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (NUNCA subir secretos al repo)
+.env
+.env.local
+.env.*.local
+
+# Builds / salidas
+dist/
+build/
+.next/
+out/
+
+# Prisma
+apps/api/prisma/*.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Claude Code: configuración personal/local (NO compartir). El settings.json sí se comparte.
+.claude/settings.local.json
+
+# Caché
+.cache/
+.turbo/
+coverage/
