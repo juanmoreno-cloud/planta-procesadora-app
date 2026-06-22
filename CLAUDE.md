@@ -102,11 +102,13 @@ por web y api.
 ## 5. Estado actual del proyecto
 
 **Hecho:**
-- Fase 0 (en curso): estructura de monorepo, `.gitignore`, `CLAUDE.md`, `README.md`,
-  Stop hook de Claude Code.
+- **Fase 0 COMPLETA:** estructura de monorepo, `.gitignore`, `CLAUDE.md`, `README.md`,
+  Stop hook de Claude Code (probado y funcionando).
+- **GitHub:** repo `juanmoreno-cloud/planta-procesadora-app` conectado. Ramas `main` y
+  `develop` creadas y subidas. Node.js v24 + npm 11 instalados. Primer push hecho.
 
 **Falta (próximos pasos inmediatos):**
-- Crear repositorio en GitHub y primer push (con guía para el dueño).
+- Empezar Fase 1 trabajando en una rama `feature/...` desde `develop`.
 - Fase 1: proyecto Supabase + Prisma + migración inicial + login/RBAC.
 - Fase 2: catálogos base (Productos → Proveedores → Clientes → Materias primas) + importador Excel.
 - Fase 3: stock/vencimientos + recetas + producción + despachos.
@@ -154,3 +156,20 @@ npm install          # instala dependencias de todo el monorepo
 - **Preguntar** ante ambigüedad de negocio (campos, reglas) en vez de asumir.
 - Al final de cada sesión: resumir lo hecho y lo que sigue, **actualizar este CLAUDE.md**,
   y hacer **commit + push** a GitHub.
+
+---
+
+## 10. Flujo de trabajo con Git (chuleta)
+
+Ramas: `main` (estable/producción) ← `develop` (integración) ← `feature/<tarea>` (trabajo).
+
+```bash
+git switch develop                  # ir a develop
+git switch -c feature/productos     # crear rama de tarea desde develop
+git add -A                          # marcar cambios
+git commit -m "mensaje claro"       # punto de guardado
+git push                            # subir a GitHub
+git switch develop && git merge feature/productos   # integrar al terminar
+```
+
+Repo: `https://github.com/juanmoreno-cloud/planta-procesadora-app`
