@@ -106,10 +106,15 @@ por web y api.
   Stop hook de Claude Code (probado y funcionando).
 - **GitHub:** repo `juanmoreno-cloud/planta-procesadora-app` conectado. Ramas `main` y
   `develop` creadas y subidas. Node.js v24 + npm 11 instalados. Primer push hecho.
+- **Fase 1 (en curso):** proyecto Supabase creado (ref `qdhzchslaxrgdhgfwhwa`, región
+  us-west-2, plan Free). `apps/api` con Prisma. **Esquema completo aplicado: las 13 tablas
+  del modelo existen en Supabase.** Prisma Client verificado (conecta y consulta OK).
+  Trabajando en rama `feature/fase1-db-auth`.
 
 **Falta (próximos pasos inmediatos):**
-- Empezar Fase 1 trabajando en una rama `feature/...` desde `develop`.
-- Fase 1: proyecto Supabase + Prisma + migración inicial + login/RBAC.
+- Esqueleto de la app NestJS (módulo principal, health endpoint) sobre `apps/api`.
+- Login en frontend (Supabase Auth) + guard de roles (RBAC) en backend.
+- Esqueleto del frontend `apps/web` (React + Vite).
 - Fase 2: catálogos base (Productos → Proveedores → Clientes → Materias primas) + importador Excel.
 - Fase 3: stock/vencimientos + recetas + producción + despachos.
 - Fase 4: reporte de recall + dashboards + despliegue.
@@ -120,13 +125,31 @@ por web y api.
 
 ## 6. Cómo correr el proyecto localmente
 
-> Aún no hay apps creadas. Esta sección se completará en Fase 1.
-> Requisitos previos: Node.js 20+ y npm.
+> Requisitos previos: Node.js 20+ y npm. Cada app necesita su `.env` (copiar del
+> `.env.example` y rellenar con las llaves de Supabase).
 
 ```bash
-npm install          # instala dependencias de todo el monorepo
-# (próximamente) npm run dev:web   y   npm run dev:api
+npm install                              # instala dependencias de todo el monorepo
+# Backend (apps/api):
+cd apps/api
+npx prisma generate                      # genera el cliente de Prisma
+node scripts/test-prisma.js              # verifica conexión a la base de datos
 ```
+
+**Conexión a la base de datos (importante):**
+- La conexión "directa"/session pooler de Supabase (puerto **5432**) NO responde en redes
+  sin IPv6. Usamos el **pooler de transacción (puerto 6543)** con `?pgbouncer=true` para
+  todo (runtime con Prisma Client y aplicación de esquema).
+- `prisma db push`/`migrate` se cuelgan sobre el pooler de transacción (no soporta los
+  advisory locks). Por eso el esquema se aplica con un script propio:
+  ```bash
+  cd apps/api
+  npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/init.sql
+  node scripts/apply-sql.js prisma/init.sql   # crea/actualiza tablas vía pooler 6543
+  node scripts/list-tables.js                 # lista las tablas existentes
+  ```
+- Variables en `apps/api/.env`: `DATABASE_URL` (6543), `DIRECT_URL`, `SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 
