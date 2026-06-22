@@ -106,17 +106,21 @@ por web y api.
   Stop hook de Claude Code (probado y funcionando).
 - **GitHub:** repo `juanmoreno-cloud/planta-procesadora-app` conectado. Ramas `main` y
   `develop` creadas y subidas. Node.js v24 + npm 11 instalados. Primer push hecho.
-- **Fase 1 (casi completa):** proyecto Supabase (ref `qdhzchslaxrgdhgfwhwa`, us-west-2,
-  Free). 13 tablas aplicadas. **Backend NestJS** funcionando: `/api/health`, `/api/me`
-  (con sesión), `/api/admin/ping` (solo admin). Auth Supabase + RBAC **verificado de punta
-  a punta** (200/401/403). **Frontend React+Vite** con login (Supabase) y pantalla de
-  inicio que consume `/api/me`; compila y construye OK. Script `create-user.js` para dar
-  de alta usuarios. Rama `feature/fase1-db-auth`.
+- **Fase 1 COMPLETA:** proyecto Supabase (ref `qdhzchslaxrgdhgfwhwa`, us-west-2, Free).
+  13 tablas aplicadas. **Backend NestJS**: `/api/health`, `/api/me` (con sesión),
+  `/api/admin/ping` (solo admin). Auth Supabase + RBAC **verificado de punta a punta**
+  (200/401/403). **Frontend React+Vite** con login y pantalla de inicio que consume
+  `/api/me`. **Login en navegador probado por el dueño con su cuenta admin** (rol admin
+  visible en pantalla). Cuenta admin creada: `juan.moreno@vale-market.com`.
+  Scripts útiles en `apps/api/scripts/`: `create-user.js`, `login-check.js`, `verify-rbac.js`,
+  `apply-sql.js`, `list-tables.js`, `test-prisma.js`. Trabajo fusionado a `develop`.
 
-**Falta (próximos pasos inmediatos):**
-- Crear la cuenta admin del dueño y probar el login en el navegador (cierre de Fase 1).
-- Fusionar `feature/fase1-db-auth` → `develop`.
-- Fase 2: catálogos base (Productos primero) + importador Excel.
+**Falta (próximos pasos inmediatos — Fase 2):**
+- Crear `packages/shared` (tipos + Zod compartidos).
+- Módulo **Productos** (primer catálogo): API CRUD en NestJS + pantalla en React.
+  Confirmar con el dueño los campos exactos del formulario antes de construir.
+- Repetir patrón: Proveedores, Clientes, Materias primas.
+- Importador de Excel para carga inicial + plantillas.
 - Fase 2: catálogos base (Productos → Proveedores → Clientes → Materias primas) + importador Excel.
 - Fase 3: stock/vencimientos + recetas + producción + despachos.
 - Fase 4: reporte de recall + dashboards + despliegue.
