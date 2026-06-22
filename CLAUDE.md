@@ -106,15 +106,17 @@ por web y api.
   Stop hook de Claude Code (probado y funcionando).
 - **GitHub:** repo `juanmoreno-cloud/planta-procesadora-app` conectado. Ramas `main` y
   `develop` creadas y subidas. Node.js v24 + npm 11 instalados. Primer push hecho.
-- **Fase 1 (en curso):** proyecto Supabase creado (ref `qdhzchslaxrgdhgfwhwa`, región
-  us-west-2, plan Free). `apps/api` con Prisma. **Esquema completo aplicado: las 13 tablas
-  del modelo existen en Supabase.** Prisma Client verificado (conecta y consulta OK).
-  Trabajando en rama `feature/fase1-db-auth`.
+- **Fase 1 (casi completa):** proyecto Supabase (ref `qdhzchslaxrgdhgfwhwa`, us-west-2,
+  Free). 13 tablas aplicadas. **Backend NestJS** funcionando: `/api/health`, `/api/me`
+  (con sesión), `/api/admin/ping` (solo admin). Auth Supabase + RBAC **verificado de punta
+  a punta** (200/401/403). **Frontend React+Vite** con login (Supabase) y pantalla de
+  inicio que consume `/api/me`; compila y construye OK. Script `create-user.js` para dar
+  de alta usuarios. Rama `feature/fase1-db-auth`.
 
 **Falta (próximos pasos inmediatos):**
-- Esqueleto de la app NestJS (módulo principal, health endpoint) sobre `apps/api`.
-- Login en frontend (Supabase Auth) + guard de roles (RBAC) en backend.
-- Esqueleto del frontend `apps/web` (React + Vite).
+- Crear la cuenta admin del dueño y probar el login en el navegador (cierre de Fase 1).
+- Fusionar `feature/fase1-db-auth` → `develop`.
+- Fase 2: catálogos base (Productos primero) + importador Excel.
 - Fase 2: catálogos base (Productos → Proveedores → Clientes → Materias primas) + importador Excel.
 - Fase 3: stock/vencimientos + recetas + producción + despachos.
 - Fase 4: reporte de recall + dashboards + despliegue.
@@ -134,6 +136,23 @@ npm install                              # instala dependencias de todo el monor
 cd apps/api
 npx prisma generate                      # genera el cliente de Prisma
 node scripts/test-prisma.js              # verifica conexión a la base de datos
+```
+
+**Levantar la app en desarrollo (dos terminales):**
+```bash
+# Terminal 1 — backend (apps/api):
+cd apps/api && npm run build && npm run start:prod   # o: npm run dev (con recarga)
+# queda en http://localhost:3000/api
+
+# Terminal 2 — frontend (apps/web):
+cd apps/web && npm run dev                            # queda en http://localhost:5173
+```
+
+**Crear un usuario (admin u otros roles):**
+```bash
+cd apps/api
+node scripts/create-user.js "email" "contraseña" "Nombre" admin
+# roles válidos: admin | produccion | calidad | logistica
 ```
 
 **Conexión a la base de datos (importante):**
