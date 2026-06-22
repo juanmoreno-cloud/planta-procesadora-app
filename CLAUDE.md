@@ -106,10 +106,21 @@ por web y api.
   Stop hook de Claude Code (probado y funcionando).
 - **GitHub:** repo `juanmoreno-cloud/planta-procesadora-app` conectado. Ramas `main` y
   `develop` creadas y subidas. Node.js v24 + npm 11 instalados. Primer push hecho.
+- **Fase 1 COMPLETA:** proyecto Supabase (ref `qdhzchslaxrgdhgfwhwa`, us-west-2, Free).
+  13 tablas aplicadas. **Backend NestJS**: `/api/health`, `/api/me` (con sesión),
+  `/api/admin/ping` (solo admin). Auth Supabase + RBAC **verificado de punta a punta**
+  (200/401/403). **Frontend React+Vite** con login y pantalla de inicio que consume
+  `/api/me`. **Login en navegador probado por el dueño con su cuenta admin** (rol admin
+  visible en pantalla). Cuenta admin creada: `juan.moreno@vale-market.com`.
+  Scripts útiles en `apps/api/scripts/`: `create-user.js`, `login-check.js`, `verify-rbac.js`,
+  `apply-sql.js`, `list-tables.js`, `test-prisma.js`. Trabajo fusionado a `develop`.
 
-**Falta (próximos pasos inmediatos):**
-- Empezar Fase 1 trabajando en una rama `feature/...` desde `develop`.
-- Fase 1: proyecto Supabase + Prisma + migración inicial + login/RBAC.
+**Falta (próximos pasos inmediatos — Fase 2):**
+- Crear `packages/shared` (tipos + Zod compartidos).
+- Módulo **Productos** (primer catálogo): API CRUD en NestJS + pantalla en React.
+  Confirmar con el dueño los campos exactos del formulario antes de construir.
+- Repetir patrón: Proveedores, Clientes, Materias primas.
+- Importador de Excel para carga inicial + plantillas.
 - Fase 2: catálogos base (Productos → Proveedores → Clientes → Materias primas) + importador Excel.
 - Fase 3: stock/vencimientos + recetas + producción + despachos.
 - Fase 4: reporte de recall + dashboards + despliegue.
@@ -120,13 +131,48 @@ por web y api.
 
 ## 6. Cómo correr el proyecto localmente
 
-> Aún no hay apps creadas. Esta sección se completará en Fase 1.
-> Requisitos previos: Node.js 20+ y npm.
+> Requisitos previos: Node.js 20+ y npm. Cada app necesita su `.env` (copiar del
+> `.env.example` y rellenar con las llaves de Supabase).
 
 ```bash
-npm install          # instala dependencias de todo el monorepo
-# (próximamente) npm run dev:web   y   npm run dev:api
+npm install                              # instala dependencias de todo el monorepo
+# Backend (apps/api):
+cd apps/api
+npx prisma generate                      # genera el cliente de Prisma
+node scripts/test-prisma.js              # verifica conexión a la base de datos
 ```
+
+**Levantar la app en desarrollo (dos terminales):**
+```bash
+# Terminal 1 — backend (apps/api):
+cd apps/api && npm run build && npm run start:prod   # o: npm run dev (con recarga)
+# queda en http://localhost:3000/api
+
+# Terminal 2 — frontend (apps/web):
+cd apps/web && npm run dev                            # queda en http://localhost:5173
+```
+
+**Crear un usuario (admin u otros roles):**
+```bash
+cd apps/api
+node scripts/create-user.js "email" "contraseña" "Nombre" admin
+# roles válidos: admin | produccion | calidad | logistica
+```
+
+**Conexión a la base de datos (importante):**
+- La conexión "directa"/session pooler de Supabase (puerto **5432**) NO responde en redes
+  sin IPv6. Usamos el **pooler de transacción (puerto 6543)** con `?pgbouncer=true` para
+  todo (runtime con Prisma Client y aplicación de esquema).
+- `prisma db push`/`migrate` se cuelgan sobre el pooler de transacción (no soporta los
+  advisory locks). Por eso el esquema se aplica con un script propio:
+  ```bash
+  cd apps/api
+  npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/init.sql
+  node scripts/apply-sql.js prisma/init.sql   # crea/actualiza tablas vía pooler 6543
+  node scripts/list-tables.js                 # lista las tablas existentes
+  ```
+- Variables en `apps/api/.env`: `DATABASE_URL` (6543), `DIRECT_URL`, `SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 

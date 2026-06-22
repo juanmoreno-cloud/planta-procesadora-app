@@ -1,0 +1,257 @@
+// Esquema de base de datos de Optiflow (PostgreSQL / Supabase).
+// Modelos en PascalCase (código) mapeados a tablas snake_case en español (lo que ve Power BI).
+// Ver el modelo de datos documentado en CLAUDE.md (sección 4).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Enums ----------
+
+enum Rol {
+  admin
+  produccion
+  calidad
+  logistica
+}
+
+enum TipoMateriaPrima {
+  principal
+  insumo
+}
+
+enum OrigenConsumo {
+  manual
+  backflush
+}
+
+enum TipoMovimientoStock {
+  entrada
+  salida
+  ajuste
+  merma
+}
+
+// ---------- Usuarios y roles ----------
+
+model Usuario {
+  id        String   @id @db.Uuid // = uid de Supabase Auth
+  nombre    String
+  email     String   @unique
+  rol       Rol
+  area      String?
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now()) @map("creado_en")
+
+  lotesProduccion LoteProduccion[]
+
+  @@map("usuarios")
+}
+
+// ---------- Catálogos ----------
+
+model Producto {
+  id            String   @id @default(uuid()) @db.Uuid
+  codigo        String   @unique
+  nombre        String
+  descripcion   String?
+  unidadMedida  String   @map("unidad_medida")
+  categoria     String?
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  recetas         Receta[]
+  lotesProduccion LoteProduccion[]
+
+  @@map("productos")
+}
+
+model Proveedor {
+  id                   String   @id @default(uuid()) @db.Uuid
+  razonSocial          String   @map("razon_social")
+  identificacionFiscal String?  @map("identificacion_fiscal")
+  contacto             String?
+  telefono             String?
+  email                String?
+  direccion            String?
+  activo               Boolean  @default(true)
+  creadoEn             DateTime @default(now()) @map("creado_en")
+  actualizadoEn        DateTime @updatedAt @map("actualizado_en")
+
+  materiasPrimas MateriaPrima[]
+  lotesMp        LoteMp[]
+
+  @@map("proveedores")
+}
+
+model Cliente {
+  id                   String   @id @default(uuid()) @db.Uuid
+  razonSocial          String   @map("razon_social")
+  identificacionFiscal String?  @map("identificacion_fiscal")
+  contacto             String?
+  telefono             String?
+  email                String?
+  direccion            String?
+  activo               Boolean  @default(true)
+  creadoEn             DateTime @default(now()) @map("creado_en")
+  actualizadoEn        DateTime @updatedAt @map("actualizado_en")
+
+  despachos Despacho[]
+
+  @@map("clientes")
+}
+
+model MateriaPrima {
+  id           String           @id @default(uuid()) @db.Uuid
+  codigo       String           @unique
+  nombre       String
+  unidadMedida String           @map("unidad_medida")
+  tipo         TipoMateriaPrima
+  proveedorId  String?          @map("proveedor_id") @db.Uuid
+  activo       Boolean          @default(true)
+  creadoEn     DateTime         @default(now()) @map("creado_en")
+  actualizadoEn DateTime        @updatedAt @map("actualizado_en")
+
+  proveedor   Proveedor?    @relation(fields: [proveedorId], references: [id])
+  lotesMp     LoteMp[]
+  recetaItems RecetaItem[]
+
+  @@map("materias_primas")
+}
+
+// ---------- Stock y vencimientos de materias primas ----------
+
+model LoteMp {
+  id                 String    @id @default(uuid()) @db.Uuid
+  materiaPrimaId     String    @map("materia_prima_id") @db.Uuid
+  proveedorId        String?   @map("proveedor_id") @db.Uuid
+  loteProveedor      String?   @map("lote_proveedor")
+  fechaRecepcion     DateTime  @map("fecha_recepcion") @db.Date
+  fechaVencimiento   DateTime? @map("fecha_vencimiento") @db.Date
+  cantidadRecibida   Decimal   @map("cantidad_recibida") @db.Decimal(14, 3)
+  cantidadDisponible Decimal   @map("cantidad_disponible") @db.Decimal(14, 3)
+  unidad             String
+  creadoEn           DateTime  @default(now()) @map("creado_en")
+
+  materiaPrima MateriaPrima        @relation(fields: [materiaPrimaId], references: [id])
+  proveedor    Proveedor?          @relation(fields: [proveedorId], references: [id])
+  consumos     ConsumoMp[]
+  movimientos  MovimientoStockMp[]
+
+  @@map("lotes_mp")
+}
+
+model MovimientoStockMp {
+  id          String              @id @default(uuid()) @db.Uuid
+  loteMpId    String              @map("lote_mp_id") @db.Uuid
+  tipo        TipoMovimientoStock
+  cantidad    Decimal             @db.Decimal(14, 3)
+  fecha       DateTime            @default(now())
+  referencia  String?
+  motivo      String?
+
+  loteMp LoteMp @relation(fields: [loteMpId], references: [id])
+
+  @@map("movimientos_stock_mp")
+}
+
+// ---------- Recetas (para backflush) ----------
+
+model Receta {
+  id                  String   @id @default(uuid()) @db.Uuid
+  productoId          String   @map("producto_id") @db.Uuid
+  version             Int      @default(1)
+  rendimientoEsperado Decimal? @map("rendimiento_esperado") @db.Decimal(14, 3)
+  activo              Boolean  @default(true)
+
+  producto Producto     @relation(fields: [productoId], references: [id])
+  items    RecetaItem[]
+
+  @@map("recetas")
+}
+
+model RecetaItem {
+  id               String  @id @default(uuid()) @db.Uuid
+  recetaId         String  @map("receta_id") @db.Uuid
+  materiaPrimaId   String  @map("materia_prima_id") @db.Uuid
+  cantidadPorUnidad Decimal @map("cantidad_por_unidad") @db.Decimal(14, 3)
+  unidad           String
+
+  receta       Receta       @relation(fields: [recetaId], references: [id])
+  materiaPrima MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+
+  @@map("receta_items")
+}
+
+// ---------- Producción (trazabilidad entrada→salida) ----------
+
+model LoteProduccion {
+  id                String   @id @default(uuid()) @db.Uuid
+  codigoLote        String   @unique @map("codigo_lote")
+  fecha             DateTime @db.Date
+  turno             String?
+  productoId        String   @map("producto_id") @db.Uuid
+  cantidadProducida Decimal  @map("cantidad_producida") @db.Decimal(14, 3)
+  unidad            String
+  merma             Decimal? @db.Decimal(14, 3)
+  responsableId     String?  @map("responsable_id") @db.Uuid
+  observaciones     String?
+  creadoEn          DateTime @default(now()) @map("creado_en")
+
+  producto      Producto       @relation(fields: [productoId], references: [id])
+  responsable   Usuario?       @relation(fields: [responsableId], references: [id])
+  consumos      ConsumoMp[]
+  despachoItems DespachoItem[]
+
+  @@map("lotes_produccion")
+}
+
+model ConsumoMp {
+  id                String        @id @default(uuid()) @db.Uuid
+  loteProduccionId  String        @map("lote_produccion_id") @db.Uuid
+  loteMpId          String        @map("lote_mp_id") @db.Uuid
+  cantidadConsumida Decimal       @map("cantidad_consumida") @db.Decimal(14, 3)
+  unidad            String
+  origen            OrigenConsumo @default(manual)
+
+  loteProduccion LoteProduccion @relation(fields: [loteProduccionId], references: [id])
+  loteMp         LoteMp         @relation(fields: [loteMpId], references: [id])
+
+  @@map("consumos_mp")
+}
+
+// ---------- Despachos / ventas (trazabilidad hacia clientes — recall) ----------
+
+model Despacho {
+  id              String   @id @default(uuid()) @db.Uuid
+  clienteId       String   @map("cliente_id") @db.Uuid
+  fecha           DateTime @db.Date
+  numeroDocumento String?  @map("numero_documento")
+  observaciones   String?
+  creadoEn        DateTime @default(now()) @map("creado_en")
+
+  cliente Cliente        @relation(fields: [clienteId], references: [id])
+  items   DespachoItem[]
+
+  @@map("despachos")
+}
+
+model DespachoItem {
+  id               String  @id @default(uuid()) @db.Uuid
+  despachoId       String  @map("despacho_id") @db.Uuid
+  loteProduccionId String  @map("lote_produccion_id") @db.Uuid
+  cantidad         Decimal @db.Decimal(14, 3)
+  unidad           String
+
+  despacho       Despacho       @relation(fields: [despachoId], references: [id])
+  loteProduccion LoteProduccion @relation(fields: [loteProduccionId], references: [id])
+
+  @@map("despacho_items")
+}
